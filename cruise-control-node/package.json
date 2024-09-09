@@ -1,0 +1,21 @@
+{
+  "name": "cruise-control-node",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "child_process": "^1.0.2",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^3.0.2",
+    "nodemon": "^3.1.4"
+  }
+}

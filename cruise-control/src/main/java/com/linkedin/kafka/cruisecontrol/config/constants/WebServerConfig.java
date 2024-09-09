@@ -157,7 +157,7 @@ public final class WebServerConfig {
    * <code>webserver.security.enable</code>
    */
   public static final String WEBSERVER_SECURITY_ENABLE_CONFIG = "webserver.security.enable";
-  public static final boolean DEFAULT_WEBSERVER_SECURITY_ENABLE = false;
+  public static final boolean DEFAULT_WEBSERVER_SECURITY_ENABLE = true;
   private static final String WEBSERVER_SECURITY_ENABLE_DOC = "Enables the use of authentication and authorization features.";
 
   /**
