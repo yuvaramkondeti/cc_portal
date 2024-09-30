@@ -13,6 +13,8 @@ import Exception from '@/components/Exception'
 import AsyncTask from '@/components/AsyncTask'
 import 'bootstrap/js/dist/dropdown'
 import 'bootswatch/dist/cosmo/bootstrap.css'
+// import 'font-awesome/css/font-awesome.css'
+import '@fortawesome/fontawesome-free/css/all.css'
 
 Vue.use(Vuex)
 
@@ -76,9 +78,11 @@ Vue.filter('formatLocalTime', function (v) {
 
 /* eslint-disable no-new */
 new Vue({
+  router,
+  render: h => h(App),
   el: '#app',
   store,
-  router,
+  // router,
   template: '<App/>',
   components: { App }
-})
+}).$mount('#app')
