@@ -2,10 +2,10 @@
 <template>
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
     <a href="#" target="_self" class="navbar-brand">
-        <img height=48 :src="cclogo" alt="LinkedIn Kafka Cruise Control Frontend" />
+        <img height=48 :src="cclogo" alt="Everi Kafka Cruise Control Frontend" />
     </a>
-    <router-link class="navbar-item" :to='{name: "summary"}'>Summary</router-link>
-    <ul class="navbar-nav">
+    <router-link v-if="isAuthenticated" class="navbar-item" :to='{name: "summary"}'>Summary</router-link>
+    <ul v-if="isAuthenticated" class="navbar-nav">
       <li class="nav-item dropdown" v-for="(groupm, forgroup) in groups" :key="forgroup">
         <a class="nav-link dropdown-toggle" data-toggle='dropdown'>{{ forgroup }}</a>
         <div class="dropdown-menu">
@@ -14,7 +14,7 @@
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
-      <li class="nav-item dropdown">
+      <li v-if="isAuthenticated" class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" data-toggle='dropdown'>UI Administration</a>
         <div class="dropdown-menu">
           <router-link :to='{"name": "preferences"}' class="dropdown-item" target="_self">&#9881;  Preferences</router-link>
@@ -22,11 +22,13 @@
           <router-link :to='{"name": "configInsights"}' class="dropdown-item" target="_self">config.csv Insights</router-link>
         </div>
       </li>
+      <li v-if="isAuthenticated" class="nav-item dropdown"><a href="#" @click.prevent="handleLogout" class="nav-link logout">Logout</a> </li>
     </ul>
   </nav>
 </template>
 
 <script>
+import { mapState } from 'vuex'
 import xssFilters from 'xss-filters'
 import cclogo from '../assets/images/cc-logo.png'
 
@@ -48,7 +50,16 @@ export default {
       cclogo: cclogo
     }
   },
+  computed: {
+    ...mapState({
+      isAuthenticated: state => state.isAuthenticated
+    })
+  },
   methods: {
+    handleLogout () {
+      // Navigate to the logout route
+      this.$router.push('/logout')
+    },
     configFetch () {
       let vm = this
       let notselected = true
@@ -95,7 +106,7 @@ export default {
         vm.$store.commit('configError', true)
         vm.$store.commit('configErrorMessage', 'Error encountered while fetching :' + vm.$store.state.configurl)
       }).then(() => {
-        console.log('completed')
+        console.log('completed!!')
       })
     },
     refresh () {
@@ -113,6 +124,13 @@ export default {
   },
   created () {
     this.configFetch()
+    console.log('in Nav')
+    console.log(localStorage.getItem('isAuthenticated'))
+    let isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
+    if (isAuthenticated !== this.isAuthenticated) {
+      this.$store.commit('SET_AUTHENTICATION', isAuthenticated) // Assuming you have a mutation to set authentication status
+    }
+    console.log('Is Authenticated:', this.isAuthenticated)
   },
   beforeDestroy () {
     try {

@@ -18,31 +18,32 @@
     <div class="card">
       <div class="card-header">
         <!-- common navigation -->
-        <ul class="nav nav-tabs card-header-tabs">
+        <ul class="nav nav-tabs card-header-tabs" :style="{ top: menuTop + 'px' }">
           <!-- Bold Items are heavier on CC -->
           <li class="nav-item" v-if='modules.kafkaclusterstate' >
-            <router-link class="nav-link" :to='{"name": "page.kafkaclusterstate", params: { group: group, cluster: cluster } }'>Kafka Cluster State</router-link>
+            <router-link class="nav-link" :to='{"name": "page.kafkaclusterstate", params: { group: group, cluster: cluster } }'><span class="material-icons">dns</span>
+Kafka Cluster State</router-link>
           </li>
           <li class="nav-item" v-if='modules.load'>
-            <router-link class="nav-link" :to='{"name": "page.load", params: { group: group, cluster: cluster } }'><b>Kafka Cluster Load</b></router-link>
+            <router-link class="nav-link" :to='{"name": "page.load", params: { group: group, cluster: cluster } }'><span class="material-icons">memory</span><b>Kafka Cluster Load</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.replicaload'>
-          <router-link class="nav-link" :to='{"name": "page.replicaload", params: { group: group, cluster: cluster } }'><b>Kafka Replica Load</b></router-link>
+          <router-link class="nav-link" :to='{"name": "page.replicaload", params: { group: group, cluster: cluster } }'><span class="material-icons">equalizer</span><b>Kafka Replica Load</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.partitionload'>
-          <router-link class="nav-link" :to='{"name": "page.partitionload", params: { group: group, cluster: cluster } }'><b>Kafka Partition Load</b></router-link>
+          <router-link class="nav-link" :to='{"name": "page.partitionload", params: { group: group, cluster: cluster } }'><span class="material-icons">storage</span><b>Kafka Partition Load</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.state'>
-          <router-link class="nav-link" :to='{"name": "page.state", params: { group: group, cluster: cluster } }'>Cruise Control State</router-link>
+          <router-link class="nav-link" :to='{"name": "page.state", params: { group: group, cluster: cluster } }'><span class="material-icons">check_circle</span>Cruise Control State</router-link>
           </li>
           <li class="nav-item" v-if='modules.proposals'>
-          <router-link class="nav-link" :to='{"name": "page.proposals", params: { group: group, cluster: cluster } }'><b>Cruise Control Proposals</b></router-link>
+          <router-link class="nav-link" :to='{"name": "page.proposals", params: { group: group, cluster: cluster } }'><span class="material-icons">assignment</span><b>Cruise Control Proposals</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.user_tasks'>
-          <router-link class="nav-link" :to='{"name": "page.user_tasks", params: { group: group, cluster: cluster } }'>Cruise Control Tasks</router-link>
+          <router-link class="nav-link" :to='{"name": "page.user_tasks", params: { group: group, cluster: cluster } }'><span class="material-icons">task</span>Cruise Control Tasks</router-link>
           </li>
           <li class="nav-item" v-if='modules.chart_page'>
-          <router-link class="nav-link" :to='{"name": "page.resource_distributions", params: { group: group, cluster: cluster } }'>Resource distributions</router-link>
+          <router-link class="nav-link" :to='{"name": "page.resource_distributions", params: { group: group, cluster: cluster } }'><span class="material-icons">donut_large</span>Resource distributions</router-link>
           </li>
           <!--
           <li class="nav-item" v-if='modules.admin_state'>
@@ -50,10 +51,16 @@
           </li>
           -->
           <li class="nav-item" v-if='modules.review'>
-            <router-link class="nav-link" :to='{"name": "page.review", params: { group: group, cluster: cluster } }'>Peer Reviews</router-link>
+            <router-link class="nav-link" :to='{"name": "page.review", params: { group: group, cluster: cluster } }'><span class="material-icons">rate_review</span>Peer Reviews</router-link>
           </li>
           <li class="nav-item" v-if='modules.admin_broker'>
-            <router-link class="nav-link" :to='{"name": "page.admin_broker", params: { group: group, cluster: cluster } }'>&#9881; Kafka Cluster Administration</router-link>
+            <router-link class="nav-link" :to='{"name": "page.admin_broker", params: { group: group, cluster: cluster } }'><span class="material-icons">admin_panel_settings</span> Kafka Cluster Administration</router-link>
+          </li>
+          <li class="nav-item">
+            <router-link class="nav-link" :to='{"name": "page.create_topic", params: { group: group, cluster: cluster } }'><span class="material-icons">topic</span> Create Topic</router-link>
+          </li>
+          <li class="nav-item">
+            <router-link class="nav-link" :to='{"name": "page.view_log", params: { group: group, cluster: cluster } }'><span class="material-icons">file_copy</span>View Kafka Server Logs</router-link>
           </li>
         </ul>
       </div>
@@ -76,7 +83,9 @@ export default {
   },
   data () {
     return {
-      modules: this.$store.state.modules
+      modules: this.$store.state.modules,
+      menuTop: 0,
+      lastScrollY: 0
     }
   },
   computed: {
@@ -86,6 +95,34 @@ export default {
   },
   components: {
     'offline': Offline
+  },
+  mounted () {
+    window.addEventListener('scroll', this.updateMenuPosition)
+    this.updateMenuPosition() // Set initial position
+  },
+  beforeDestroy () {
+    window.removeEventListener('scroll', this.updateMenuPosition)
+  },
+  methods: {
+    updateMenuPosition () {
+      const scrollY = window.scrollY
+      let delta = scrollY - this.lastScrollY
+      // Adjust the menu position based on scroll
+      this.menuTop = Math.max(0, this.menuTop + delta)
+      this.lastScrollY = scrollY
+    }
   }
 }
 </script>
+<style scoped>
+.hidden {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  height: 0;
+  overflow: hidden;
+}
+.nav-tabs {
+  transition: opacity 0.3s ease-in-out;
+}
+@import '~@fortawesome/fontawesome-free/css/all.css'
+</style>

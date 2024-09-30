@@ -22,10 +22,12 @@
       Loading Brokers ...
     </div>
     <div v-else-if='loaded'>
+    
       <table class="table table-sm table-bordered">
         <thead class="thead-light">
           <tr>
             <th>Broker</th>
+            <th>Host</th>
             <th>#Replicas </th>
             <th>#Leaders</th>
             <th>#Out of Sync Replicas</th>
@@ -40,7 +42,8 @@
         </thead>
         <tbody>
           <tr v-for='(v, bid) in KafkaBrokerState.ReplicaCountByBrokerId' :class='brokerRowColor'>
-            <td>{{ bid }}</td>
+            <td>{{ bid }}</td>            
+            <td :id="bid" class="host_name">{{ hostDetails[bid] }}</td>
             <td>{{ v }}</td>
             <td :class='!KafkaBrokerState.LeaderCountByBrokerId[bid] ? "table-danger" : null'>{{ KafkaBrokerState.LeaderCountByBrokerId[bid] || 0 }}</td>
             <td :class='KafkaBrokerState.OutOfSyncCountByBrokerId[bid] > 0 ? "table-danger" : null'>{{ KafkaBrokerState.OutOfSyncCountByBrokerId[bid] || 0 }}</td>
@@ -56,7 +59,7 @@
               </td>
             </template>
             <td>
-              <input type="checkbox" v-model="selectedBrokers" :value='bid'/>
+              <input type="checkbox" v-model="selectedBrokers" :class="hostDetails[bid]" :value='bid'/>
             </td>
           </tr>
         </tbody>
@@ -94,7 +97,7 @@
         </div>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="radio" value="start_kafka" v-model='actionName'>
-          <label class="form-check-label">Start Kafka</label>
+          <label class="form-check-label">Start Kafka on all brokers</label>
         </div>
 
         <div class="form-check form-check-inline float-right" v-if='actionName'>
@@ -126,7 +129,7 @@
           </div>
         </div>
         <div class="text-right">
-          <button @click='stopKafka' class="btn btn-primary">Stop Kafka</button>
+          <button @click='stopKafka(selectedBrokers)' class="btn btn-primary">Stop Kafka  {{ selectedBrokers }}</button>
         </div>
       </div>
 
@@ -143,7 +146,7 @@
           </div>
         </div>
         <div class="text-right">
-          <button @click='startKafka' class="btn btn-primary">Start Kafka</button>
+          <button @click='startKafka(selectedBrokers)' class="btn btn-primary">Start Kafka {{ selectedBrokers }}</button>
         </div>
       </div>
 
@@ -606,6 +609,8 @@ import VueChartjs from 'vue-chartjs'
 import { exec } from 'child_process'
 // eslint-disable-next-line no-unused-vars
 import axios from 'axios'
+// eslint-disable-next-line no-unused-vars
+const sortBy = require('lodash.sortby')
 
 export default {
   name: 'AdminBroker',
@@ -633,6 +638,7 @@ export default {
         LeaderCountByBrokerId: {},
         OfflineReplicaCountByBrokerId: {}
       },
+      hostDetails: [],
       allGoals: goals, // goals from configuration
       /*
        * x                              Goals   Disallow-Capacity-Estimation   Skip-Hard-Goal-Check   Use-Ready-Default-Goals   Kafka-Assigner-Mode   Module
@@ -668,7 +674,7 @@ export default {
       posted: false, // true if a POST method is made
       posturl: null, // POST url
       postResponse: '', // POST response from server
-      detectedUserTaskId: false // true in case the response has user-task-id
+      detectedUserTaskId: false // true in case the response has user-task-id,
     }
   },
   created () {
@@ -677,6 +683,9 @@ export default {
   computed: {
     taskId () {
       return this.$store.getters.getTaskId(this.url)
+    },
+    sortedHosts () {
+      return (this.hosts, this.sortColumn)
     },
     disableGoals () {
       return this.kafka_assigner || this.use_ready_default_goals
@@ -920,8 +929,32 @@ export default {
       vm.error = false
       vm.async = false
       vm.loading = true
+      let params = {
+        withCredentials: true
+      }
       let url = vm.$helpers.getURL('kafka_cluster_state')
       console.log(url)
+      // let hostArr = []
+      let brokerArr = []
+      vm.$http.get('/kafkacruisecontrol/load?allow_capacity_estimation=true&json=true', params).then((r) => {
+        // set this so that we know if the server sends user-task-id in the response
+        vm.detectedUserTaskId = r.headers.hasOwnProperty('user-task-id')
+        // check the actual response
+        vm.async = false
+        vm.loading = false
+        vm.error = false
+        vm.errorData = null
+        vm.brokers = r.data.brokers || []
+        vm.hosts = r.data.hosts || []
+        // console.log(vm.hosts)
+        console.log(vm.brokers)
+        vm.brokers.forEach(obj => {
+          brokerArr[obj.Broker] = obj.Host
+        })
+        vm.hostDetails = brokerArr
+        // console.log(brokerArr)
+        console.log(vm.hostDetails)
+      })
       this.$http.get(url, {withCredentials: true}).then((r) => {
         // set this so that we know if the server sends user-task-id in the response
         vm.detectedUserTaskId = r.headers.hasOwnProperty('user-task-id')
@@ -958,34 +991,67 @@ export default {
         vm.errorData = e && e.response && e.response.data ? e.response.data : e
       })
     },
-    stopKafka () {
+    stopKafka (selectedBrokers) {
       console.log('in stop kafa fun')
+      console.log(selectedBrokers.length)
       const vm = this
-      this.$http.get('http://10.140.129.31:3000/kafka-stop').then(r => {
-        console.log(r.status)
-        if (r.status === null || r.status === undefined || r.status === '') {
-          vm.error = true
-          vm.errorData = 'CruiseControl sent an empty response and could not complete the operation. Please try after some time or contact Administrator'
-        } else if (r.status === 200) {
-          vm.postResponse = 'The selected Broker has been STOPPED succesfully, this may take a few seconds to reflect on the cluster state dashbaord'
-          vm.posted = true
-          console.log('after kafka stop')
+      if (selectedBrokers.length > 0) {
+        let hostIP = []
+        console.log(selectedBrokers)
+        selectedBrokers.forEach(function (value) {
+          console.log(value)
+          const element = document.getElementById(value)
+          if (element) {
+            hostIP.push(element.textContent || element.innerText)
+          }
+        })
+        console.log(hostIP)
+        // const vm = this
+        const baseUrl = `http://${window.location.hostname}:3000/kafka-stop`
+        this.$http.post(baseUrl, {
+          params: hostIP
+        }).then(r => {
+          console.log(r.status)
+          if (r.status === null || r.status === undefined || r.status === '') {
+            vm.error = true
+            vm.errorData = 'CruiseControl sent an empty response and could not complete the operation. Please try after some time or contact Administrator'
+          } else if (r.status === 200) {
+            vm.postResponse = 'The selected Broker(s) has been STOPPED succesfully, this may take a few seconds to reflect on the cluster state dashbaord'
+            vm.posted = true
+            console.log('after kafka stop')
+          }
+        })
+          .catch(error => {
+            console.log(error)
+          })
+      } else {
+        vm.posted = true
+        vm.postResponse = 'Select atleast ONE broker to stop the Kafka service'
+      }
+    },
+    startKafka (selectedBrokers) {
+      console.log('in start kafa fun')
+      let hostIP = []
+      console.log(selectedBrokers)
+      selectedBrokers.forEach(function (value) {
+        console.log(value)
+        const element = document.getElementById(value)
+        if (element) {
+          hostIP.push(element.textContent || element.innerText)
         }
       })
-        .catch(error => {
-          console.log(error)
-        })
-    },
-    startKafka () {
-      console.log('in start kafa fun')
+      console.log(hostIP)
       const vm = this
-      this.$http.get('http://10.140.129.31:3000/kafka-start').then(r => {
+      const baseUrl = `http://${window.location.hostname}:3000/kafka-start`
+      this.$http.post(baseUrl, {
+        params: hostIP
+      }).then(r => {
         console.log(r.status)
         if (r.status === null || r.status === undefined || r.status === '') {
           vm.error = true
           vm.errorData = 'CruiseControl sent an empty response and could not complete the operation. Please try after some time or contact Administrator'
         } else if (r.status === 200) {
-          vm.postResponse = 'The selected Broker has been STARTED succesfully, this may take a few seconds to reflect on the cluster state dashbaord'
+          vm.postResponse = 'The selected Broker(s) has been STARTED succesfully, this may take a few seconds to reflect on the cluster state dashbaord'
           vm.posted = true
           console.log('after kafka start')
         }

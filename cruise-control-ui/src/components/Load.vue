@@ -118,6 +118,8 @@ export default {
           'User-Task-ID': task
         }
       }
+      console.log(vm.url)
+      console.log(params)
       vm.$http.get(vm.url, params).then((r) => {
         // set this so that we know if the server sends user-task-id in the response
         vm.detectedUserTaskId = r.headers.hasOwnProperty('user-task-id')
