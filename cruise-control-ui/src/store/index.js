@@ -16,6 +16,7 @@ export default new Vuex.Store({
     online: true,
     autoReloadEnabled: false, // disabled by default
     autoReloadInterval: 30000, // 30 seconds
+    isAuthenticated: false,
     // these control the enablement of a module in cruise control
     modules: {
       chart_page: true,
@@ -54,10 +55,23 @@ export default new Vuex.Store({
       return function (url) {
         return state.userTasks[url]
       }
+    },
+    isAuthenticated: state => state.isAuthenticated
+  },
+  actions: {
+    login ({ commit }, status) {
+      console.log('Triggering login action')
+      commit('SET_AUTHENTICATION', status)
+    },
+    logout ({ commit }, status) {
+      console.log('Triggering logout action')
+      commit('SET_AUTHENTICATION', status)
     }
   },
   mutations: {
     seturl: function (state, url) {
+      console.log(state)
+      console.log(url)
       state.url = url
     },
     setonline: function (state, online) {
@@ -80,6 +94,11 @@ export default new Vuex.Store({
         // delete if the taskid is invalid
         Vue.delete(state.userTasks, params.url)
       }
+    },
+    SET_AUTHENTICATION (state, status) {
+      state.isAuthenticated = status
+      localStorage.setItem('requiresAuth', status ? 'true' : 'false')
+      localStorage.setItem('isAuthenticated', status) // Use 'false' for logout
     }
   }
 })
