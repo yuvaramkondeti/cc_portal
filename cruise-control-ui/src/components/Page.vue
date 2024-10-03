@@ -124,5 +124,4 @@ export default {
 .nav-tabs {
   transition: opacity 0.3s ease-in-out;
 }
-@import '~@fortawesome/fontawesome-free/css/all.css'
 </style>

@@ -14,7 +14,7 @@ import AsyncTask from '@/components/AsyncTask'
 import 'bootstrap/js/dist/dropdown'
 import 'bootswatch/dist/cosmo/bootstrap.css'
 // import 'font-awesome/css/font-awesome.css'
-import '@fortawesome/fontawesome-free/css/all.css'
+// import '@fortawesome/fontawesome-free/css/all.css'
 
 Vue.use(Vuex)
 

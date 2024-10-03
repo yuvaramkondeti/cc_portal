@@ -119,6 +119,47 @@ app.post('/kafka-start', async (req, res) => {
     }
 });
 
+app.get('/log-files/:param1/:param2', async (req, res) => {
+    console.log(req.params)
+	const { param1, param2 } = req.params; // Access route parameter
+	//res.json({ message: `Requested Log type is ${param1} for the server ${param2}` });
+		//let result = '';
+		if(param1 === 'server_logs') {
+			console.log(param2);
+			// Configure SSH details
+			const sshConfig = {
+			  host: param2, // Replace with your remote server IP
+			  port: process.env[`PORT_${param2}`],     //SSH port
+			  username: process.env[`USER_${param2}`], //SSH username
+			  password: process.env[`PASS_${param2}`] //Password for authentication
+			};
+			const conn = new Client();
+			conn.on('ready', () => {
+			    conn.exec('ls -l /opt/kafka/logs/server.*', (err, stream) => {
+				  if (err) {
+					conn.end();
+					return res.status(500).send(`Error executing command: ${err.message}`);
+				  }
+					let output = '';
+					stream.on('close', (code, signal) => {
+						console.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
+						const fileNames = output.split('\n').filter(file => file.trim() !== '');
+						const onlyFileNames = fileNames.map(entry => entry.split('/').pop());
+						console.log(onlyFileNames);
+						res.status(200).json(onlyFileNames);
+						conn.end();
+					}).on('data', (data) => {
+						output += data.toString();
+					}).stderr.on('data', (data) => {
+						console.error('STDERR: ' + data);
+					});
+						  
+				});
+			}).connect(sshConfig);		
+		//res.send(result);
+		}
+		
+});
 
 app.listen(port, () => {
     console.log(`Server running at ${CRUISE_CONTROL_URL}:${port}`);
