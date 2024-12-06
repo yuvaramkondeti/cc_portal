@@ -122,7 +122,6 @@ app.post('/kafka-start', async (req, res) => {
 app.get('/log-files/:param1/:param2', async (req, res) => {
     console.log(req.params)
 	const { param1, param2 } = req.params; // Access route parameter
-	//res.json({ message: `Requested Log type is ${param1} for the server ${param2}` });
 		//let result = '';
 		if(param1 === 'server_logs') {
 			console.log(param2);
@@ -156,8 +155,58 @@ app.get('/log-files/:param1/:param2', async (req, res) => {
 						  
 				});
 			}).connect(sshConfig);		
-		//res.send(result);
 		}
+		
+});
+
+app.get('/log-data/:param1/:param2/:param3', async (req, res) => {
+ try {
+	console.log('in log-data api');
+    console.log(req.params)
+	const { param1, param2, param3 } = req.params; // Access route parameter
+		//let result = '';
+		if(param1 === 'server_logs') {
+			console.log(param2);
+			// Configure SSH details
+			const sshConfig = {
+			  host: param2, // Replace with your remote server IP
+			  port: process.env[`PORT_${param2}`],     //SSH port
+			  username: process.env[`USER_${param2}`], //SSH username
+			  password: process.env[`PASS_${param2}`] //Password for authentication
+			};
+			// Path to your log file
+			const baseLogPath = process.env.KAFKA_LOG_PATH; // Update with your log file name
+			const remoteLogFilePath = baseLogPath + '/' + param3; // Construct the full path
+
+            const conn = new Client();
+			conn.on('ready', () => {
+				conn.exec(`cat ${remoteLogFilePath}`, (err, stream) => {
+				  if (err) {
+					console.error('Error executing command:', err);
+					return res.status(500).send('Error reading log file');
+				  }
+
+				  let logData = '';
+				  stream.on('data', (chunk) => {
+					logData += chunk;
+				  });
+
+				  stream.on('close', (code, signal) => {
+					conn.end();
+					//res.send(`<pre>${logData}</pre>`); // Send log data as response
+					//logData = logData.replace(/(WARN)/g, '<span class="highlight">$1</span>');
+					/*const filteredLogs = logData.filter(log => 
+						log.level === 'ERROR' || log.level === 'WARNING' || log.level === 'WARN'
+					);*/
+					res.status(200).json({logData});
+				  });
+				});
+		    }).connect(sshConfig);
+			
+		}
+     } catch (error) {
+        res.status(500).send(error.message);
+    }
 		
 });
 

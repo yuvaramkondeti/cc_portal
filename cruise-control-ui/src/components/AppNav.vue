@@ -14,7 +14,7 @@
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
-      <li v-if="isAuthenticated" class="nav-item dropdown">
+      <li v-if="isAuthenticated && isAdmin" class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" data-toggle='dropdown'>UI Administration</a>
         <div class="dropdown-menu">
           <router-link :to='{"name": "preferences"}' class="dropdown-item" target="_self">&#9881;  Preferences</router-link>
@@ -53,7 +53,19 @@ export default {
   computed: {
     ...mapState({
       isAuthenticated: state => state.isAuthenticated
-    })
+    }),
+    isAdmin () {
+      // Check if the current user is an admin, from localStorage
+      const userRole = localStorage.getItem('userRole')
+      console.log('User Role (Admin check):', userRole)
+      return userRole === 'admin'
+    },
+    isDeveloper () {
+      // Check if the current user is a developer
+      const userRole = localStorage.getItem('userRole')
+      console.log('User Role (Developer check):', userRole)
+      return userRole === 'developer'
+    }
   },
   methods: {
     handleLogout () {
@@ -127,10 +139,12 @@ export default {
     console.log('in Nav')
     console.log(localStorage.getItem('isAuthenticated'))
     let isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
-    if (isAuthenticated !== this.isAuthenticated) {
-      this.$store.commit('SET_AUTHENTICATION', isAuthenticated) // Assuming you have a mutation to set authentication status
+    const userRole = localStorage.getItem('userRole')
+    if (isAuthenticated !== this.isAuthenticated || userRole !== this.$store.state.userRole) {
+      this.$store.commit('SET_AUTHENTICATION', { status: isAuthenticated, role: userRole })
     }
     console.log('Is Authenticated:', this.isAuthenticated)
+    console.log('User Role:', userRole)
   },
   beforeDestroy () {
     try {

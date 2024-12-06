@@ -37,47 +37,22 @@
             <td>{{ bid }}</td>            
             <td :id="bid" class="host_name">{{ hostDetails[bid] }}</td>
             <td>
-              <input type="radio" v-model="selectedBrokers" :class="hostDetails[bid]" :value='bid'/>
+              <input type="radio" v-model="selectedBrokers" :class="hostDetails[bid]" :value='bid' @change="clearPostResponse()"/>
             </td>
              <td class="split-td">
                 <div class="left-part">
-                    <button class="btn btn-primary" :value="server_logs" v-model='logType' @click="getLogFilesApi(bid, 'server_logs')">Server Log</button>
+                    <button :disabled="selectedBrokers !== bid" class="btn btn-primary" :value='bid' v-model='logType' @click="getLogFilesApi(bid, 'server_logs')">Server Log</button>
                 </div>
-                <div class="vertical-line"></div>
+                <!--<div class="vertical-line"></div>
                 <div class="right-part">
-                    <button class="btn btn-secondary" :value="zoo_logs" v-model='logType' @click="getLogFilesApi(selectedBrokers, 'zoo_logs')">Zookeeper Log</button>
-                </div>
+                    <button :disabled="selectedBrokers !== bid" class="btn btn-secondary" :value='bid' v-model='logType' @click="getLogFilesApi(selectedBrokers, 'zoo_logs')">Zookeeper Log</button>
+                </div>-->
             </td>
           </tr>
         </tbody>
       </table>
-
+    
      
-          
-      <!-- Add Broker Flags
-      <div class="alert alert-success" v-if='selectedBrokers.length > 0 && actionName === "add"'>
-        <h5>Select Log Type</h5>
-        <hr>
-        <form>
-          <div class="form-check">
-            <input class="form-check-input" type="radio"  @change="getLogFilesApi(selectedBrokers)" value="server_logs" v-model='logType'>
-            <label class="form-check-label">
-              Kafa Server Logs
-            </label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio"  @change="getLogFilesApi(selectedBrokers)" value="zoo_logs" v-model='logType'>
-            <label class="form-check-label">
-              Zookeeper Logs
-            </label>
-          </div>
-          <div class="text-right">
-            <button @click.prevent='actionBroker' class="btn btn-primary" v-if='logType === "server_logs"'>Get Kafka Server Logs for Broker {{ selectedBrokers }}</button>
-            <button @click.prevent='actionBroker' class="btn btn-primary" v-if='logType === "zoo_logs"'>Get Zookeeper logs for Broker {{ selectedBrokers }}</button>
-          </div>
-        </form>
-      </div>-->
-
       <!--
         <pre><code v-if='actionURL'>{{ actionURL.replace(/\&/g, "\n\t") }}</code></pre>
         -->
@@ -85,16 +60,30 @@
         <div v-if='posted'>
           <div v-if='postResponse'>
             <button class="btn btn-info" @click='clearPostResponse'>Clear Response</button>
-            <ul>
+            <!--<ul>
                 <li v-for="(item, index) in postResponse" :key="index">
                     {{ item }}
                 </li>
-            </ul>
-           <!-- <exception :exception='postResponse'></exception>-->
+            </ul>-->
+            <label class="log-select-label" for="optionsSelect">Log Type: <b style="color:green">{{logType}}</b>, Broker: <b style='color:brown'>{{selectedBrokers}}</b>.<br/><br/>Select the log file to continue:</label>
+            <select v-model="selectedOption" class="log-select">
+                <option v-for="(item, index) in postResponse" :key="index" :value="item">
+                    {{ item }}
+                </option>
+            </select>
+            <button @click='getLogData(selectedBrokers)' class="btn btn-primary">Get Log Data</button>
+                <!-- <exception :exception='postResponse'></exception>-->
           </div>
-          <div class='alert alert-success' v-else>
+
+          <div v-if='postLogResponse'>
+              <exception :exception='postLogResponse'></exception>
+          </div>
+          <div v-if="isLoading" class='alert alert-success' v-else>
             Waiting for Response ...
           </div>
+          <!--<div v-if="isLoading">
+            Loading...
+          </div>-->
         </div>
     </div>
   </div>
@@ -131,6 +120,8 @@ export default {
       error: false, // in case server sent non 200 OK Response
       errorData: null, // complete error data
       selectedBrokers: [],
+      selectedOption: null,
+      isLoading: false,
       // This is the response from the CC
       KafkaBrokerState: {
         OfflineLogDirsByBrokerId: {},
@@ -176,6 +167,7 @@ export default {
       posted: false, // true if a POST method is made
       posturl: null, // POST url
       postResponse: '', // POST response from server
+      postLogResponse: null,
       detectedUserTaskId: false // true in case the response has user-task-id,
     }
   },
@@ -189,9 +181,6 @@ export default {
     sortedHosts () {
       return (this.hosts, this.sortColumn)
     },
-    disableGoals () {
-      return this.kafka_assigner || this.use_ready_default_goals
-    },
     brokerRowColor () {
       return null
     },
@@ -201,125 +190,11 @@ export default {
       let params = {
         dryrun: vm.dryrun
       }
-      if (vm.actionName === 'remove' || vm.actionName === 'add' || vm.actionName === 'demote') {
-        if (vm.selectedBrokers) {
-          params.brokerid = vm.selectedBrokers
-        }
-        if (vm.disallow_capacity_estimation) {
-          params.allow_capacity_estimation = !vm.disallow_capacity_estimation
-        }
-      }
-      if (vm.actionName === 'remove' || vm.actionName === 'add' || vm.actionName === 'rebalance') {
-        if (vm.goals1.length > 0) {
-          params.goals = vm.goals1
-        }
-        if (vm.goals2.length > 0) {
-          params.kafka_assigner = true
-        }
-        if (vm.skip_hard_goal_check) {
-          params.skip_hard_goal_check = vm.skip_hard_goal_check
-        }
-        if (vm.use_ready_default_goals) {
-          params.use_ready_default_goals = vm.use_ready_default_goals
-        }
-        if (vm.disallow_capacity_estimation) {
-          params.allow_capacity_estimation = !vm.disallow_capacity_estimation
-        }
-        if (vm.kafka_assigner) {
-          params.kafka_assigner = vm.kafka_assigner
-        }
-        if (vm.data_from && vm.data_from.length > 0) {
-          params.data_from = vm.data_from
-        }
-        if (vm.concurrent_partition_movements_per_broker) {
-          params.concurrent_partition_movements_per_broker = vm.concurrent_partition_movements_per_broker
-        }
-        if (vm.concurrent_leader_movements) {
-          params.concurrent_leader_movements = vm.concurrent_leader_movements
-        }
-        if (vm.excluded_topics && vm.excluded_topics.length > 0) {
-          // Disable this due to https://github.com/linkedin/cruise-control-ui/issues/40
-          // params.excluded_topics = xssFilters.uriQueryInDoubleQuotedAttr(vm.excluded_topics)
-          params.excluded_topics = vm.excluded_topics
-        }
-      }
-      if (vm.actionName === 'remove') {
-        // POST /kafkacruisecontrol/remove_broker
-        //  ?brokerid=[id1,id2...]
-        //  &goals=[goal1,goal2...]
-        //  &skip_hard_goal_check=[true/false]
-        //  &use_ready_default_goals=[true/false]
-        //  &allow_capacity_estimation=[true/false]
-        //  &kafka_assigner=[true/false]
-        //  &dryrun=[true/false]
-        //  &data_from=[valid_windows/valid_partitions]
-        //  &excluded_topics=[TOPICS]
-        //  &concurrent_partition_movements_per_broker=[concurrency]
-        //  &concurrent_leader_movements=[concurrency]
-        //  &throttle_removed_broker=[true/false]
-        //  &json=[true/false]
-        if (vm.throttle_removed_broker) {
-          params.throttle_removed_broker = params.throttle_removed_broker
-        }
-        return vm.$helpers.getURL('remove_broker', params)
-      }
-      if (vm.actionName === 'demote') {
-        // POST /kafkacruisecontrol/demote_broker
-        //  ?brokerid=[id1, id2...]
-        //  &dryrun=[true/false]
-        //  &json=[true/false]
-        //  &allow_capacity_estimation=[true/false]
-        //  &concurrent_leader_movements=[concurrency]
-        return vm.$helpers.getURL('demote_broker', params)
-      }
-      if (vm.actionName === 'add') {
-        // POST /kafkacruisecontrol/add_broker
-        //  ?brokerid=[id1,id2...]
-        //  &goals=[goal1,goal2...]
-        //  &dryrun=[true/false]
-        //  &throttle_added_broker=[true/false]
-        //  &kafka_assigner=[true/false]
-        //  &json=[true/false]
-        //  &&allow_capacity_estimation=[true/false]
-        //  &concurrent_partition_movements_per_broker=[concurrency]
-        //  &concurrent_leader_movements=[concurrency]
-        //  &data_from=[valid_windows/valid_partitions]
-        //  &skip_hard_goal_check=[true/false]
-        //  &excluded_topics=[TOPICS]
-        //  &use_ready_default_goals=[true/false]
-        if (vm.throttle_added_broker) {
-          params.throttle_added_broker = vm.throttle_added_broker
-        }
-        return vm.$helpers.getURL('add_broker', params)
-      }
       if (vm.actionName === 'ple') {
         if (vm.concurrent_leader_movements > 0) {
           params.concurrent_leader_movements = vm.concurrent_leader_movements
         }
         params.goals = 'PreferredLeaderElectionGoal'
-        return vm.$helpers.getURL('rebalance', params)
-      }
-      if (vm.actionName === 'rebalance') {
-        // POST /kafkacruisecontrol/rebalance
-        //  ?goals=[goal1,goal2...]
-        //  &skip_hard_goal_check=[true/false]
-        //  &use_ready_default_goals=[true/false]
-        //  &allow_capacity_estimation=[true/false]
-        //  &kafka_assigner=[true/false]
-        //  &dryrun=[true/false]
-        //  &data_from=[valid_windows/valid_partitions]
-        //  &json=[true/false]
-        //  &concurrent_partition_movements_per_broker=[concurrency]
-        //  &concurrent_leader_movements=[concurrency]
-        //  &excluded_topics=[TOPICS]
-        return vm.$helpers.getURL('rebalance', params)
-      }
-      if (vm.actionName === 'rebalance_disk') {
-        // POST /kafkacruisecontrol/rebalance
-        // ?dryrun=[true/false]
-        // ?rebalance_disk=true
-        params.rebalance_disk = 'true'
-
         return vm.$helpers.getURL('rebalance', params)
       }
       // console.log(' no url !')
@@ -387,15 +262,50 @@ export default {
     clearPostResponse () {
       this.posted = false
       this.postResponse = ''
+      this.postLogResponse = ''
+    },
+    getLogData (selectedBrokers) {
+      this.postLogResponse = ''
+      // console.log('in getLogData Fun')
+      // console.log(selectedBrokers)
+      // console.log(this.logType)
+      // console.log(this.hostIP)
+      // console.log(this.selectedOption)
+      this.isLoading = true // Set loading to true before the API call
+      if (this.selectedOption && this.logType && this.selectedBrokers && this.hostIP) {
+        const vm = this
+        const baseUrl = `http://${window.location.hostname}:3000/log-data/${this.logType}/${this.hostIP}/${this.selectedOption}`
+        console.log(baseUrl)
+        this.$http.get(baseUrl).then(r => {
+          console.log(r)
+          if (r.status === null || r.status === undefined || r.status === '') {
+            vm.error = true
+            vm.errorData = 'Could not complete the operation. Please try after some time or contact Administrator'
+          } else if (r.status === 200) {
+            vm.postLogResponse = r.data.logData
+            vm.posted = true
+            this.isLoading = false // Set loading to false before the API call
+            console.log('after getting logdata')
+          }
+        }).catch(error => {
+          console.log(error)
+        })
+      }
     },
     getLogFilesApi (selectedBrokers, logType) {
+      this.postResponse = ''
+      this.postLogResponse = ''
+      console.log(this.posted)
+      this.posted = true
+      this.isLoading = true
       let hostIP
       this.logType = logType
-      console.log(this.logType)
-      console.log(selectedBrokers)
+      // console.log(this.logType)
+      // console.log(selectedBrokers)
       const element = document.getElementById(selectedBrokers)
       hostIP = element.textContent || element.innerText
-      console.log(hostIP)
+      this.hostIP = hostIP
+      // console.log(hostIP)
       if (this.logType) {
         const vm = this
         const baseUrl = `http://${window.location.hostname}:3000/log-files/${this.logType}/${hostIP}`
@@ -407,6 +317,8 @@ export default {
           } else if (r.status === 200) {
             vm.postResponse = r.data
             vm.posted = true
+            this.isLoading = false
+            this.selectedOption = this.postResponse[0]
             console.log('after getting logfiles')
           }
         }).catch(error => {

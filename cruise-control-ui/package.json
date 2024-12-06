@@ -28,6 +28,7 @@
     "vue-chartjs": "^3.5.1",
     "vue-router": "^3.1.6",
     "vuex": "^3.2.0",
+    "xlsx": "^0.18.5",
     "xss-filters": "^1.2.7"
   },
   "devDependencies": {
@@ -75,7 +76,7 @@
     "webpack-hot-middleware": "^2.18.0",
     "webpack-merge": "^4.2.2"
   },
-  "browser":{
+  "browser": {
     "child_process": false
   },
   "engines": {
@@ -92,5 +93,4 @@
       "no-unused-vars": "off"
     }
   }
- 
 }

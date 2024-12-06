@@ -27,8 +27,20 @@ export default {
       username: '',
       password: '',
       errorMessage: '',
-      user: process.env.VUE_APP_USERNAME,
-      pwd: process.env.VUE_APP_PASSWORD
+      // user: process.env.VUE_APP_USERNAME,
+      // pwd: process.env.VUE_APP_PASSWORD
+      users: {
+        admin: {
+          user: process.env.VUE_APP_USERNAME,
+          pwd: process.env.VUE_APP_PASSWORD,
+          role: 'admin'
+        },
+        user: {
+          user: process.env.VUE_APP_DEV_USERNAME,
+          pwd: process.env.VUE_APP_DEV_PASSWORD,
+          role: 'developer'
+        }
+      }
     }
   },
   methods: {
@@ -36,10 +48,16 @@ export default {
     login () {
       // console.log('in login function')
       // console.log('inside login func', this.nodeenv)
-      if (this.username === this.user && this.password === this.pwd) {
+      const user = Object.values(this.users).find(
+        user => user.user === this.username && user.pwd === this.password
+      )
+      // if (this.username === this.user && this.password === this.pwd) {
+      if (user) {
+        console.log(user.role)
         localStorage.setItem('requiresAuth', 'true')
         localStorage.setItem('isAuthenticated', 'true')
-        this.$store.dispatch('login', true)
+        localStorage.setItem('userRole', user.role)
+        this.$store.dispatch('login', { status: true, role: user.role })
         this.$router.push({path: '/env'})
       } else {
         this.errorMessage = 'Invalid credentials'

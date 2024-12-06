@@ -17,6 +17,7 @@ export default {
       localStorage.setItem('requiresAuth', 'false')
       // Optionally, clear other authentication data
       localStorage.removeItem('authToken')
+      localStorage.removeItem('userRole')
       // Redirect to login or home page
       this.$store.dispatch('logout', false)
       this.$router.push('/')

@@ -17,6 +17,7 @@ export default new Vuex.Store({
     autoReloadEnabled: false, // disabled by default
     autoReloadInterval: 30000, // 30 seconds
     isAuthenticated: false,
+    userRole: localStorage.getItem('userRole') || null, // Retrieve user role from localStorage
     // these control the enablement of a module in cruise control
     modules: {
       chart_page: true,
@@ -56,16 +57,18 @@ export default new Vuex.Store({
         return state.userTasks[url]
       }
     },
-    isAuthenticated: state => state.isAuthenticated
+    isAuthenticated: state => state.isAuthenticated,
+    userRole: state => state.userRole
   },
   actions: {
-    login ({ commit }, status) {
+    login ({ commit }, { status, role }) {
       console.log('Triggering login action')
-      commit('SET_AUTHENTICATION', status)
+      // const user = state.users[username];
+      commit('SET_AUTHENTICATION', { status, role })
     },
     logout ({ commit }, status) {
       console.log('Triggering logout action')
-      commit('SET_AUTHENTICATION', status)
+      commit('SET_AUTHENTICATION', { status, role: 'null' })
     }
   },
   mutations: {
@@ -95,10 +98,13 @@ export default new Vuex.Store({
         Vue.delete(state.userTasks, params.url)
       }
     },
-    SET_AUTHENTICATION (state, status) {
+    SET_AUTHENTICATION (state, { status, role }) {
       state.isAuthenticated = status
+      state.userRole = role
+      console.log('before setting user role', role)
       localStorage.setItem('requiresAuth', status ? 'true' : 'false')
       localStorage.setItem('isAuthenticated', status) // Use 'false' for logout
+      localStorage.setItem('userRole', role) // Store the role
     }
   }
 })

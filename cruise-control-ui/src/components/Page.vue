@@ -20,26 +20,26 @@
         <!-- common navigation -->
         <ul class="nav nav-tabs card-header-tabs" :style="{ top: menuTop + 'px' }">
           <!-- Bold Items are heavier on CC -->
-          <li class="nav-item" v-if='modules.kafkaclusterstate' >
+          <li class="nav-item" v-if="modules.kafkaclusterstate" >
             <router-link class="nav-link" :to='{"name": "page.kafkaclusterstate", params: { group: group, cluster: cluster } }'><span class="material-icons">dns</span>
 Kafka Cluster State</router-link>
           </li>
-          <li class="nav-item" v-if='modules.load'>
+          <li class="nav-item" v-if="modules.load">
             <router-link class="nav-link" :to='{"name": "page.load", params: { group: group, cluster: cluster } }'><span class="material-icons">memory</span><b>Kafka Cluster Load</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.replicaload'>
           <router-link class="nav-link" :to='{"name": "page.replicaload", params: { group: group, cluster: cluster } }'><span class="material-icons">equalizer</span><b>Kafka Replica Load</b></router-link>
           </li>
-          <li class="nav-item" v-if='modules.partitionload'>
+          <li class="nav-item" v-if="modules.partitionload && hasPermission('admin')">
           <router-link class="nav-link" :to='{"name": "page.partitionload", params: { group: group, cluster: cluster } }'><span class="material-icons">storage</span><b>Kafka Partition Load</b></router-link>
           </li>
           <li class="nav-item" v-if='modules.state'>
           <router-link class="nav-link" :to='{"name": "page.state", params: { group: group, cluster: cluster } }'><span class="material-icons">check_circle</span>Cruise Control State</router-link>
           </li>
-          <li class="nav-item" v-if='modules.proposals'>
+          <li class="nav-item" v-if="modules.proposals && hasPermission('admin')">
           <router-link class="nav-link" :to='{"name": "page.proposals", params: { group: group, cluster: cluster } }'><span class="material-icons">assignment</span><b>Cruise Control Proposals</b></router-link>
           </li>
-          <li class="nav-item" v-if='modules.user_tasks'>
+          <li class="nav-item" v-if="modules.user_tasks && hasPermission('admin')">
           <router-link class="nav-link" :to='{"name": "page.user_tasks", params: { group: group, cluster: cluster } }'><span class="material-icons">task</span>Cruise Control Tasks</router-link>
           </li>
           <li class="nav-item" v-if='modules.chart_page'>
@@ -50,14 +50,14 @@ Kafka Cluster State</router-link>
             <router-link :to='{"name": "page.admin_state", params: { group: group, cluster: cluster, embed: true } }'>&#9881; Sampling Admin</router-link>
           </li>
           -->
-          <li class="nav-item" v-if='modules.review'>
+          <li class="nav-item" v-if="modules.review && hasPermission('admin')">
             <router-link class="nav-link" :to='{"name": "page.review", params: { group: group, cluster: cluster } }'><span class="material-icons">rate_review</span>Peer Reviews</router-link>
           </li>
-          <li class="nav-item" v-if='modules.admin_broker'>
+          <li class="nav-item" v-if="modules.admin_broker && hasPermission('admin')">
             <router-link class="nav-link" :to='{"name": "page.admin_broker", params: { group: group, cluster: cluster } }'><span class="material-icons">admin_panel_settings</span> Kafka Cluster Administration</router-link>
           </li>
           <li class="nav-item">
-            <router-link class="nav-link" :to='{"name": "page.create_topic", params: { group: group, cluster: cluster } }'><span class="material-icons">topic</span> Create Topic</router-link>
+            <router-link class="nav-link" :to='{"name": "page.create_topic", params: { group: group, cluster: cluster } }'><span class="material-icons">topic</span> Topics & Messages</router-link>
           </li>
           <li class="nav-item">
             <router-link class="nav-link" :to='{"name": "page.view_log", params: { group: group, cluster: cluster } }'><span class="material-icons">file_copy</span>View Kafka Server Logs</router-link>
@@ -110,6 +110,10 @@ export default {
       // Adjust the menu position based on scroll
       this.menuTop = Math.max(0, this.menuTop + delta)
       this.lastScrollY = scrollY
+    },
+    hasPermission (...allowedRoles) {
+      const userRole = localStorage.getItem('userRole')
+      return allowedRoles.includes(userRole)
     }
   }
 }

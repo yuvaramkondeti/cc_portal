@@ -4,5 +4,7 @@ module.exports = {
   NODE_ENV: '"production"',
   VUE_APP_USERNAME: '"user"',
   VUE_APP_PASSWORD: '"Kafka@2024"',
-  VUE_APP_IDLE_TIME: '"1200000"'
+  VUE_APP_IDLE_TIME: '"1200000"',
+  VUE_APP_DEV_USERNAME: '"developer"',
+  VUE_APP_DEV_PASSWORD: '"Dev@2024"'
 }
