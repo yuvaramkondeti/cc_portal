@@ -2,7 +2,7 @@ import os
 import subprocess
 
 if __name__ == "__main__":
-	rootDir = os.getcwd();
+    rootDir = os.getcwd();
     # Change the directory to the folder where your app is located
     cruise_node_dir = os.path.join(os.getcwd(), "cruise-control-node")  # Path to the 'cruise_node_dir' folder
 
