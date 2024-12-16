@@ -14,6 +14,9 @@
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
+      <li v-if="isAuthenticated && isUser" class="welcome-user">
+          Hello, {{ userNameVal }}!
+      </li>
       <li v-if="isAuthenticated && isAdmin" class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" data-toggle='dropdown'>UI Administration</a>
         <div class="dropdown-menu">
@@ -28,7 +31,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 import xssFilters from 'xss-filters'
 import cclogo from '../assets/images/cc-logo.png'
 
@@ -54,6 +57,11 @@ export default {
     ...mapState({
       isAuthenticated: state => state.isAuthenticated
     }),
+    ...mapGetters(['userRole', 'user']),
+    userNameVal () {
+      // Retrieve user name from localStorage or state
+      return localStorage.getItem('user')
+    },
     isAdmin () {
       // Check if the current user is an admin, from localStorage
       const userRole = localStorage.getItem('userRole')
@@ -65,6 +73,11 @@ export default {
       const userRole = localStorage.getItem('userRole')
       console.log('User Role (Developer check):', userRole)
       return userRole === 'developer'
+    },
+    isUser () {
+      const userName = localStorage.getItem('user')
+      console.log('User Name check:', userName)
+      return userName !== null && userName !== ''
     }
   },
   methods: {
@@ -140,11 +153,16 @@ export default {
     console.log(localStorage.getItem('isAuthenticated'))
     let isAuthenticated = localStorage.getItem('isAuthenticated') === 'true'
     const userRole = localStorage.getItem('userRole')
+    const userName = localStorage.getItem('user')
+    if (userName) {
+      localStorage.setItem('user', userName)
+    }
     if (isAuthenticated !== this.isAuthenticated || userRole !== this.$store.state.userRole) {
       this.$store.commit('SET_AUTHENTICATION', { status: isAuthenticated, role: userRole })
     }
     console.log('Is Authenticated:', this.isAuthenticated)
     console.log('User Role:', userRole)
+    console.log('Username:', userName)
   },
   beforeDestroy () {
     try {

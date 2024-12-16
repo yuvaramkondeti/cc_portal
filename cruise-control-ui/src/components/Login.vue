@@ -11,6 +11,14 @@
         <input v-model="password" type="password" id="password" />
       </div>
       <button class="btn btn-primary" type="submit">Login</button>
+       <div>
+        <div class="login-container">
+          <button @click="loginWithGitHub" class="github-login-button">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1024px-Octicons-mark-github.svg.png" alt="GitHub Logo" class="github-icon">
+              Login with GitHub
+            </button>
+        </div>
+      </div>
     </form>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
@@ -19,7 +27,7 @@
 <script>
 // import { ref } from 'vue'
 // import { useRouter } from 'vue-router'
-
+import authService from '@/services/authService'
 export default {
   name: 'Login',
   data () {
@@ -63,6 +71,9 @@ export default {
         this.errorMessage = 'Invalid credentials'
       }
     }
+  },
+  loginWithGitHub () {
+    authService.redirectToGitHubAuth()
   }
 }
 </script>
