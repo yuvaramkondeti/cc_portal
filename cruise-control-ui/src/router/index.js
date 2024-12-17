@@ -22,9 +22,12 @@ import PeerReview from '@/components/PeerReview'
 // import store from '@/store'
 import Summary from '@/components/Summary'
 import Login from '@/components/Login'
-import Logout from '@/components/Logout'
+// import Logout from '@/components/Logout'
 import CreateTopic from '@/components/CreateTopic'
 import ViewLog from '@/components/ViewLog'
+import SsoLogin from '@/components/SsoLogin'
+import SsoLogout from '@/components/SsoLogout'
+import Callback from '@/components/Callback'
 
 // import childprocess from 'child_process'
 
@@ -32,6 +35,7 @@ Vue.use(Router)
 console.log('Router configuration file loaded')
 // export default new Router({
 const router = new Router({
+  mode: 'hash', // Ensure hash mode is set
   linkActiveClass: '',
   linkExactActiveClass: 'active',
   routes: [
@@ -40,22 +44,35 @@ const router = new Router({
       path: '/',
       meta: { requiresAuth: false, role: ['admin', 'developer'] },
       // redirect: '/a/b'
-      component: Login
+      // component: Login
+      component: SsoLogin
+    },
+    {
+      path: '/auth/callback',
+      name: 'Callback',
+      // redirect: '/callback',
+      meta: { requiresAuth: false, role: ['admin', 'developer'] },
+      component: Callback
     },
     {
       path: '/env',
       redirect: '/a/b',
       meta: { requiresAuth: true, role: ['admin', 'developer'] }
     },
-    /* {
+    {
       path: '/',
       name: 'Login',
       component: Login
+    },
+    /* {
+      path: '/logout',
+      name: 'Logout',
+      component: Logout
     }, */
     {
       path: '/logout',
       name: 'Logout',
-      component: Logout
+      component: SsoLogout
     },
     {
       name: 'summary',
@@ -218,7 +235,16 @@ router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const isAuthenticated = localStorage.getItem('requiresAuth') === 'true'
   const userRole = localStorage.getItem('userRole')
-  console.log('in beforeeach', userRole)
+  // console.log('in beforeeach', userRole)
+  // console.log(to.fullPath)
+  // console.log(from.fullPath)
+  if (to.fullPath === '/auth/callback' && from.fullPath === '/') {
+    if (to.name !== 'Callback') {
+      next({ name: 'Callback' })
+    } else {
+      next() // Prevent infinite redirection    return
+    }
+  }
   if (to.fullPath === '/' && isAuthenticated) {
     console.log('in if1')
     next('/env')
@@ -232,12 +258,27 @@ router.beforeEach((to, from, next) => {
     console.log('in else')
     if (to.meta.role && isAuthenticated) {
       // Check if the user's role is allowed for this route
-      console.log(to.meta.role)
+      // console.log(to.meta.role)
       if (!to.meta.role.includes(userRole)) {
         next({ name: 'page.kafkaclusterstate' })// Redirect to kafka_cluster_state page
         return
       }
     }
+    if (isAuthenticated) {
+      next()
+      return
+    }
+    const queryString = window.location.search
+    const urlParams = new URLSearchParams(queryString)
+    const code = urlParams.get('code')
+    // console.log(code)
+    if (urlParams.get('code') && code !== '') {
+      // console.log('im here')
+      next({ name: 'Callback', params: { code: code } })
+      return
+    }
+    // console.log('final', to.path)
+    // console.log(to.query.code)
     next()
   }
 })
