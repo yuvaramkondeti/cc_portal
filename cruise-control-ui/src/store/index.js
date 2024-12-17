@@ -18,6 +18,8 @@ export default new Vuex.Store({
     autoReloadInterval: 30000, // 30 seconds
     isAuthenticated: false,
     userRole: localStorage.getItem('userRole') || null, // Retrieve user role from localStorage
+    gitAccessToken: localStorage.getItem('gitAccessToken') || null,
+    user: localStorage.getItem('user') || null,
     // these control the enablement of a module in cruise control
     modules: {
       chart_page: true,
@@ -58,7 +60,9 @@ export default new Vuex.Store({
       }
     },
     isAuthenticated: state => state.isAuthenticated,
-    userRole: state => state.userRole
+    userRole: state => state.userRole,
+    gitAccessToken: state => state.gitAccessToken,
+    user: state => state.user // Getter for user
   },
   actions: {
     login ({ commit }, { status, role }) {
@@ -66,9 +70,24 @@ export default new Vuex.Store({
       // const user = state.users[username];
       commit('SET_AUTHENTICATION', { status, role })
     },
+    // Action to set the user
+    setUser ({ commit }, user) {
+      commit('SET_USER', user)
+    },
+    // Action to set the GitHub access token
+    setGitAccessToken ({ commit }, token) {
+      commit('SET_GIT_ACCESS_TOKEN', token) // Dispatch the SET_GIT_ACCESS_TOKEN mutation
+    },
     logout ({ commit }, status) {
       console.log('Triggering logout action')
-      commit('SET_AUTHENTICATION', { status, role: 'null' })
+      commit('SET_AUTHENTICATION', { status, role: null })
+      commit('SET_GIT_ACCESS_TOKEN', null)
+      commit('SET_USER', null)
+      localStorage.removeItem('requiresAuth')
+      localStorage.removeItem('isAuthenticated')
+      localStorage.removeItem('userRole')
+      localStorage.removeItem('gitAccessToken')
+      localStorage.removeItem('user')
     }
   },
   mutations: {
@@ -98,13 +117,29 @@ export default new Vuex.Store({
         Vue.delete(state.userTasks, params.url)
       }
     },
+    SET_USER (state, user) {
+      state.user = user
+    },
+    SET_GIT_ACCESS_TOKEN (state, token) {
+      console.log('before setting:', token)
+      state.gitAccessToken = token
+    },
     SET_AUTHENTICATION (state, { status, role }) {
+      // console.log('gittoken', gittoken)
+      // console.log('user', user)
       state.isAuthenticated = status
       state.userRole = role
+      // state.gitAccessToken = gittoken
+      // state.user = user
+      console.log('before setting status', status)
+      // console.log('before setting user:', user)
       console.log('before setting user role', role)
+      // console.log('before setting gitAccessToken', gittoken)
       localStorage.setItem('requiresAuth', status ? 'true' : 'false')
       localStorage.setItem('isAuthenticated', status) // Use 'false' for logout
       localStorage.setItem('userRole', role) // Store the role
+      // localStorage.setItem('gitAccessToken', gittoken) // Store the role
+      // localStorage.setItem('user', user)
     }
   }
 })
